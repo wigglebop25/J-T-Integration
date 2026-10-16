@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "J&T Tracking",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

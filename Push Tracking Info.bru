@@ -1,0 +1,76 @@
+meta {
+  name: Push Tracking Info
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{process.env.callbackUrl}}
+  auth: none
+}
+
+vars:pre-request {
+  @description('Waybill number')
+  billCode: 
+  @description('Customer order number')
+  txlogisticId: 
+}
+
+script:pre-request {
+  const CryptoJS = require('crypto-js');
+
+  const apiAccount   = bru.getEnvVar('apiAccount');
+  const privateKey   = bru.getEnvVar('privateKey');
+  const billCode     = bru.getRequestVar('billCode') || bru.getEnvVar('billCode');
+  const txlogisticId = bru.getRequestVar('txlogisticId') || bru.getProcessEnv('txlogisticId');
+
+  const timestamp = Date.now().toString();
+
+  // Push payload (J&T -> your receiver). No customerCode/digest inside bizContent.
+  const bizContent = JSON.stringify({
+    billCode: billCode,
+    txlogisticId: txlogisticId,
+    details: [
+      {
+        scanTime: '2026-05-09 09:57:04',
+        scanTypeName: 'Picked Up',
+        scanTypeCode: '106',
+        scanNetworkTypeName: 'Branch',
+        scanNetworkName: 'Irosin-lal144',
+        scanNetworkProvince: 'METRO-MANILA',
+        scanNetworkCity: 'TAGUIG',
+        scanNetworkArea: 'CENTRAL SIGNAL VILLAGE',
+        staffName: 'Courier',
+        staffContact: '63213123213',
+        signPicUrl: '',
+        problemPicUrl: '',
+        longitude: '124.03525830',
+        latitude: '12.70386030',
+        weight: 0.5,
+        timeZone: 'UTC+8'
+      }
+    ]
+  });
+
+  // Header signature: same scheme as the trace query
+  const headerDigest = CryptoJS.enc.Base64.stringify(CryptoJS.MD5(bizContent + privateKey));
+
+  req.setHeader('apiAccount', apiAccount);
+  req.setHeader('digest', headerDigest);
+  req.setHeader('timestamp', timestamp);
+  req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+  req.setBody('bizContent=' + encodeURIComponent(bizContent));
+}
+
+tests {
+  test('returns HTTP 200', function () {
+    expect(res.status).to.equal(200);
+  });
+
+  test('receiver acknowledged (code 1)', function () {
+    if (String(res.body.code) !== '1') {
+      console.log('Push response:', JSON.stringify(res.body));
+    }
+    expect(String(res.body.code)).to.equal('1');
+  });
+}

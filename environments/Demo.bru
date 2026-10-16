@@ -1,0 +1,14 @@
+vars {
+  @description('API host')
+  baseUrl: {{process.env.DEMO_BASE_URL}}
+  @description('API account identifier')
+  apiAccount: {{process.env.DEMO_API_ACCOUNT}}
+  @description('Merchant private key')
+  privateKey: {{process.env.DEMO_PRIVATE_KEY}}
+  @description('Customer code')
+  customerCode: {{process.env.DEMO_CUSTOMER_CODE}}
+  @description('Plaintext password')
+  password: {{process.env.DEMO_PASSWORD}}
+  @description('Waybill number')
+  billCode: {{process.env.DEMO_BILL_CODE}}
+}
