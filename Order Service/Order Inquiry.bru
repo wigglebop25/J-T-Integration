@@ -1,12 +1,17 @@
 meta {
-  name: Query Trace
+  name: Order Inquiry
   type: http
   seq: 1
 }
 
 post {
-  url: {{baseUrl}}/webopenplatformapi/api/logistics/trace
+  url: {{baseUrl}}/webopenplatformapi/api/order/getOrders
   auth: none
+}
+
+vars:pre-request {
+  @description('Customer order number')
+  txlogisticId: 
 }
 
 script:pre-request {
@@ -16,19 +21,18 @@ script:pre-request {
   const privateKey   = bru.getEnvVar('privateKey');
   const customerCode = bru.getEnvVar('customerCode');
   const password     = bru.getEnvVar('password');
-  const billCode     = bru.getEnvVar('billCode');
+  const txlogisticId = bru.getRequestVar('txlogisticId') || bru.getProcessEnv('txlogisticId');
 
   const timestamp = Date.now().toString();
 
-  // 1) Service signature carried inside bizContent
+  // Service signature carried inside bizContent
   const pws = CryptoJS.MD5(password + 'jadada236t2').toString().toUpperCase();
   const bizDigest = CryptoJS.enc.Base64.stringify(CryptoJS.MD5(customerCode + pws + privateKey));
-  const bizContent = JSON.stringify({ digest: bizDigest, billCode, customerCode });
+  const bizContent = JSON.stringify({ customerCode, digest: bizDigest, txlogisticId });
 
-  // 2) Header signature is computed over the final bizContent string
+  // Header signature is computed over the final bizContent string
   const headerDigest = CryptoJS.enc.Base64.stringify(CryptoJS.MD5(bizContent + privateKey));
 
-  // Send as application/x-www-form-urlencoded with a single bizContent field
   req.setHeader('apiAccount', apiAccount);
   req.setHeader('digest', headerDigest);
   req.setHeader('timestamp', timestamp);
